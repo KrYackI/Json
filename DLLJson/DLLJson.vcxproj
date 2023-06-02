@@ -108,7 +108,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;DLLJSON_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\ipnnr\source\repos\Json\StatLibJson</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\StatLibJson</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:twoPhase-	
  %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -116,6 +116,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>C:\LIBANTLR4\lib\antlr4-runtime.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -126,7 +127,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;DLLJSON_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\git_reps\Json\statLibJson</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\git_reps\Json\StatLibJson</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:twoPhase-	
  %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>

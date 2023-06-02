@@ -21,7 +21,24 @@ public:
 		delete data;
 		delete next;
 	};
-	string ToString() {
+	string ToString() 
+	{
+		string s = ( tab(GetDepth()) + '"' + GetKey() + '"' + ':');
+		if (GetContent() != "")
+		{
+			s += GetContent();
+			if (next != nullptr) s += ",";
+			s += "\n";
+		}
+		if (GetType() == "array ") {
+			s += "\t{\n";
+			if (getdata() == nullptr) s += "\t}\n";
+		}
+		//if (next == nullptr)
+		//	s += "}\n";
+		return s;
+	}
+	string To_String() {
 		return ("[D:" + to_string(GetDepth()) + "] " + GetKey() + ':' + GetContent());
 	}
 	virtual string GetType() = 0;
@@ -31,35 +48,30 @@ public:
 
 	virtual void SetContent(string s) = 0;
 
-	void setnext(Value* _next) { next = _next; }
-	void setdata(Value* _data) { data = _data; }
+	void setnext(Value* _next) { /*if (_next != nullptr) _next->next = next; */next = _next; }
+	void setdata(Value* _data) { /*if (_data != nullptr) _data->next = data; */data = _data; }
 	Value* getnext() { return next; }
 	Value* getdata() { return data; }
 	string tab(int d) {
 		string res;
 		for (int i = 0; i < d; i++) {
-			res += "   ";
+			res += " ";
 		}
 		return res;
 	}
 	friend ostream& operator <<(ostream& out, Value& v) {
-
 		out << v.tab(v.depth) << '"' << v.GetKey() << '"' << ": ";
-		if (v.GetContent() != "") {
+		if (v.GetContent() != "")
 			out << v.GetContent();
-			if (v.next!=nullptr)out << ",";
-			out << endl;
-		}
 		if (v.data != nullptr) {
 			out << "{" << '\n' << *v.data << v.tab(v.depth) << "}" << '\n';
 		}
 
 		if (v.next != nullptr) {
-			out << *v.next;
+			out <<"," << endl << *v.next;
 		}
 
 		return out;
-
 	};
 
 	string GetLeafs()
@@ -81,7 +93,7 @@ public:
 				tmp = tmp->next;
 			}
 		}
-		s += "}";
+		s += "}\n";
 		return s;
 	}
 };

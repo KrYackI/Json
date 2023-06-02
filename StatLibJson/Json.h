@@ -1,6 +1,8 @@
 #pragma once
 #include "Value.h"
+#include <sstream>
 #include <stack>
+
 using namespace std;
 
 class Pointer {
@@ -9,26 +11,37 @@ class Pointer {
 public:
 	Pointer() { cur = nullptr; }
 	Pointer(Value* root) { cur = root; }
+	void init(Value* root) { cur = root; path = stack<Value*>(); }
 	Value* GetCur() { return cur; }
+	bool HasNext() { return GetCur()->getnext() != nullptr; }
+	bool HasRight() { return GetCur()->getdata() != nullptr; }
+	bool HasBack() { return !isempty(); }
+	bool HasUp() { return !isempty(); }
 	void GoNext() { path.push(cur); cur = cur->getnext(); }
 	void GoRight() { path.push(cur); cur = cur->getdata(); }
-	void GoBack() { cur = path.top(); path.pop(); }
+	void GoBack() { if (path.empty()) return; cur = path.top(); path.pop(); }
 	void GoUp() {
+		if (path.empty()) return;
 		Value* prev = cur;
 		GoBack();
-		while (cur->getdata() != prev) {
+		while ((cur->getdata() != prev)) {
 			if (cur->GetDepth() == 1) break;
 			prev = cur;
 			GoBack();
 		}
 	}
 	void AddNext(Value* _next) {
-		if (cur == nullptr) { cur = _next; return; }
+		if (cur == nullptr) {
+			cur = _next; return; 
+		}
+		_next->setnext(cur->getnext());
 		cur->setnext(_next);
 		GoNext();
 	}
 	void AddRight(Value* _right) {
+		_right->setnext(cur->getdata());
 		cur->setdata(_right);
+
 		GoRight();
 	}
 	void SetContent(int _content) {
@@ -37,10 +50,31 @@ public:
 	void SetContent(string _content) {
 		cur->SetContent(_content);
 	}
-	bool isempty() { return path.empty(); }
-	string show() {
-		return cur->GetKey() + ":" + cur->GetContent() + '\n';
+	void SetNext(Value* _next) {
+		cur->setnext(_next);
 	}
+	void delcur() {
+		if (cur == nullptr) return;
+		Value* tmp = cur;
+		if (path.empty())
+		{
+			cur = nullptr;
+			delete tmp;
+			return;
+		}
+
+		GoBack();
+		if (cur->getdata() == tmp) {
+			cur->setdata(tmp->getnext());
+			tmp->setnext(nullptr);
+		}
+		else {
+			cur->setnext(tmp->getnext());
+			tmp->setnext(nullptr);
+		}
+		delete tmp;
+		}
+		bool isempty() { return path.empty(); }
 };
 
 class Json {
@@ -73,17 +107,27 @@ class Json {
 		}
 		return res;
 	}
+	void pointer_reset() {
+		while (!p->isempty()) {
+			p->GoBack();
+		}
+		p->AddNext(Root);
+	}
 public:
 	Pointer* p;
 	Json() { Root = nullptr; p = new Pointer(); }
 	~Json() {
+		//if (p->GetCur())
 		delete Root;
 		delete p;
 	}
 	friend ostream& operator <<(ostream& out, Json& v) {
-		out << "\n{" << endl << *v.Root << "}\n" << endl;
+		if (v.GetCur() != nullptr)
+			out << "\n{" << endl << *v.Root << "}\n" << endl;
+		else out << "empty" << endl;
 		return out;
 	}
+	void parse(string filename);
 	friend istream& operator>>(istream& istr, Json& json)
 	{
 		//string temp;
@@ -91,9 +135,9 @@ public:
 		//string key = "";
 		//string val = "";
 		//int type; //1 - string, 2 - int, 3 - array
-		//bool state = 1; // ìû ñ÷èòûâàåì ëèáî êëþ÷ ëèáî çíà÷åíèå
+		//bool state = 1; // Ã¬Ã» Ã±Ã·Ã¨Ã²Ã»Ã¢Ã Ã¥Ã¬ Ã«Ã¨Ã¡Ã® ÃªÃ«Ã¾Ã· Ã«Ã¨Ã¡Ã® Ã§Ã­Ã Ã·Ã¥Ã­Ã¨Ã¥
 		//char cur = '0';
-		//bool rb = 0;	//æäåò ëè ìàññèâ ïåðâîå çíà÷åíèå
+		//bool rb = 0;	//Ã¦Ã¤Ã¥Ã² Ã«Ã¨ Ã¬Ã Ã±Ã±Ã¨Ã¢ Ã¯Ã¥Ã°Ã¢Ã®Ã¥ Ã§Ã­Ã Ã·Ã¥Ã­Ã¨Ã¥
 		//getline(istr, temp);
 
 		//getline(istr, temp);
@@ -168,7 +212,7 @@ public:
 			getline(istr, temp);
 			file += temp;
 		}
-		//string* tokens;
+		string* tokens;
 		int l = file.length();
 		int type; //1 - string, 2 - int, 3 - array
 		int depth = 1;
@@ -203,8 +247,7 @@ public:
 					if (rb) { json.p->AddRight(newvalue);rb = 0; }
 					else { json.p->AddNext(newvalue); 
 					if (first) json.Root = newvalue;
-					}
-					
+					}					
 				}
 				if (file[i] == '}') {
 					json.p->GoUp();
@@ -214,14 +257,14 @@ public:
 				first = 0;
 			}
 			i++;
-
 		}
-
+		json.p->init(json.Root);
 
 		return istr;
 	}
 	Value* process(string s, int depth) {
 		string name = get_key(s);
+		s = s.erase(s.find('"'), name.length() + 2);
 		if (s.find('{') != -1) {
 			Value* res = new ValueArr(name, depth);
 			return res;
@@ -242,31 +285,74 @@ public:
 		}
 		
 	}
-	Value* GetCur() { return p->GetCur(); }
+	Value* GetCur() { if (p->GetCur() == nullptr) return Root; return p->GetCur(); }
+	bool HasNext() { return p->HasNext(); }
 	void GoNext() {
+		if (!p->GetCur()) throw -1;
 		if (GetCur()->getnext() != nullptr)p->GoNext();
 		else throw - 1;
 	}
+	bool HasRight() { return p->HasRight(); }
 	void GoRight() {
+		if (!p->GetCur()) throw -1;
 		if (GetCur()->getdata() != nullptr)
 		{
 			p->GoRight();
 		}
 		else { throw - 1; }
 	}
+	bool HasBack() { return p->HasBack(); }
 	void GoBack() {
 		if (!p->isempty()) p->GoBack();
 		else throw - 1;
 	}
+	bool HasUp() { return p->HasUp(); }
 	void GoUp() {
 		if (!p->isempty()) p->GoUp();
 		else throw - 1;
 	}
 	void AddNext(Value* _next) {
+		if (GetCur() == nullptr)
+		{
+			Root = _next;
+			p->init(Root);
+			return;
+		}
 		p->AddNext(_next);
 	}
 	void AddRight(Value* _right) {
+		if (GetCur() == nullptr)
+		{
+			Root = _right;
+			p->init(Root);
+			return;
+		}
 		p->AddRight(_right);
+	}
+	void AddRight(string key, int mode, string content) {
+		switch (mode)
+		{
+		case 0:
+		{
+			ValueStr* _right = new ValueStr(key, GetCur()->GetDepth() + 1);
+			_right->SetContent(content);
+			p->AddRight(_right);
+			break;
+		}
+		case 1:
+		{
+			ValueInt* _right = new ValueInt(key, GetCur()->GetDepth() + 1);
+			_right->SetContent(content);
+			p->AddRight(_right);
+			break;
+		}
+		case 2:
+		{
+			ValueArr* _right = new ValueArr(key, GetCur()->GetDepth() + 1);
+			p->AddRight(_right);
+			break;
+		}
+		}
 	}
 	void SetContent(int _content) {
 		p->SetContent(_content);
@@ -274,9 +360,15 @@ public:
 	void SetContent(string _content) {
 		p->SetContent(_content);
 	}
+	void delcur() {
+		p->delcur();
+	}
 
 	string GetCurRow()
 	{
+		if (GetCur() == nullptr) return "empty";
 		return GetCur()->GetLeafs();
 	}
+
+	Pointer* GetPointer() { return new Pointer(Root); }
 };
